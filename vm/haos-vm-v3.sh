@@ -318,16 +318,13 @@ for i in {0,1}; do
 done
 msg_ok "Extracted Disk Image"
 
-msg_info "Creating HAOS VM"
-qm create $VMID -agent 1 -bios ovmf -cores $CORE_COUNT -memory $RAM_SIZE -name $VM_NAME -net0 virtio,bridge=$BRG,macaddr=$MAC$VLAN \
-  -onboot 1 -ostype l26 -scsihw virtio-scsi-pci
+msg_ok "Creating VM..."
+VM_NAME="homeassistant"
+qm create $VMID -agent 1 -bios ovmf -name $VM_NAME -net0 virtio,bridge=vmbr0 -onboot 1 -ostype l26 -scsihw virtio-scsi-pci
+
 pvesm alloc $STORAGE $VMID $DISK0 128 1>&/dev/null
-qm importdisk $VMID ${FILE%.*} $STORAGE ${IMPORT_OPT:-} 1>&/dev/null
-qm set $VMID \
-  -efidisk0 ${DISK0_REF},size=128K \
-  -scsi0 ${DISK1_REF},size=32G >/dev/null
-qm set $VMID \
-  -boot order=scsi0 >/dev/null
+qm importdisk $VMID ${FILE%".xz"} $STORAGE ${IMPORT_OPT:-} 1>&/dev/null
+qm set $VMID -bootdisk sata0 -efidisk0 ${DISK0_REF},size=128K -sata0 ${DISK1_REF},size=6G > /dev/null
 set +o errtrace
 (
 msg_ok "Created HAOS VM ${CL}${BL}${VM_NAME}"
